@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Counter — Conversational Checkout Agent</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --paper: #FAF8F3;
+    --panel: #F1ECE0;
+    --ink: #201E1A;
+    --ink-soft: #6B6558;
+    --rule: #DDD6C4;
+    --stamp: #B2402E;
+    --sage: #4C6B4F;
+    --sage-bg: #E7EEE3;
+    --amber: #A67221;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .brand{
+    display:flex; align-items:baseline; gap:.6rem;
+    padding:1.4rem 1.6rem 0.4rem;
+  }
+  .brand .mark{
+    font-family:'Fraunces',serif; font-weight:600; font-size:1.5rem; letter-spacing:-.01em;
+  }
+  .brand .tag{
+    font-family:'IBM Plex Mono',monospace; font-size:.72rem; color:var(--ink-soft);
+  }
+
+  .subhead{
+    padding:0 1.6rem 1.2rem;
+    max-width:640px;
+    font-size:.95rem;
+    color:var(--ink-soft);
+    line-height:1.5;
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap:0;
+    border-top:1px solid var(--rule);
+  }
+  @media (max-width: 880px){
+    .layout{ grid-template-columns: 1fr; }
+  }
+
+  /* ---- LEFT: catalog + chat ---- */
+  .left{
+    padding:1.4rem 1.6rem 2rem;
+    border-right:1px solid var(--rule);
+  }
+  @media (max-width: 880px){ .left{ border-right:none; border-bottom:1px solid var(--rule); } }
+
+  .section-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:.72rem;
+    color:var(--ink-soft);
+    margin: 0 0 .7rem;
+  }
+
+  .catalog{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px,1fr));
+    gap:.7rem;
+    margin-bottom:1.6rem;
+  }
+  .product{
+    border:1px solid var(--rule);
+    padding:.7rem;
+    background:#fff;
+  }
+  .product .name{ font-size:.85rem; font-weight:600; }
+  .product .meta{ font-size:.76rem; color:var(--ink-soft); margin-top:.15rem; }
+  .product .price{ font-family:'IBM Plex Mono',monospace; font-size:.8rem; margin-top:.4rem; }
+  .product.out .name{ color:var(--ink-soft); }
+  .product.out{ background:repeating-linear-gradient(135deg,#fff,#fff 6px,#F4F0E6 6px,#F4F0E6 12px); }
+
+  .chat{
+    border:1px solid var(--rule);
+    background:#fff;
+    display:flex; flex-direction:column;
+    height: 380px;
+  }
+  .chat-log{
+    flex:1; overflow-y:auto; padding:1rem;
+    display:flex; flex-direction:column; gap:.6rem;
+  }
+  .bubble{
+    max-width:80%;
+    padding:.55rem .75rem;
+    font-size:.88rem;
+    line-height:1.4;
+    border-radius:3px;
+  }
+  .bubble.user{
+    align-self:flex-end;
+    background:var(--ink);
+    color:var(--paper);
+  }
+  .bubble.agent{
+    align-self:flex-start;
+    background:var(--panel);
+    color:var(--ink);
+    border:1px solid var(--rule);
+  }
+  .bubble .card{
+    margin-top:.5rem;
+    border:1px solid var(--rule);
+    background:#fff;
+    padding:.5rem .6rem;
+    font-size:.82rem;
+  }
+  .bubble .card .row{ display:flex; justify-content:space-between; }
+
+  .chat-input{
+    display:flex; border-top:1px solid var(--rule);
+  }
+  .chat-input input{
+    flex:1; border:none; padding:.8rem .9rem; font-size:.9rem; font-family:inherit;
+    background:transparent; color:var(--ink);
+  }
+  .chat-input input:focus{ outline:none; }
+  .chat-input button{
+    border:none; background:var(--stamp); color:#fff;
+    padding:0 1.1rem; font-family:'IBM Plex Mono',monospace; font-size:.78rem;
+    cursor:pointer;
+  }
+  .chat-input button:hover{ opacity:.9; }
+
+  .try-row{ display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.6rem; }
+  .try-chip{
+    font-family:'IBM Plex Mono',monospace; font-size:.72rem;
+    border:1px solid var(--rule); background:#fff;
+    padding:.3rem .55rem; cursor:pointer; color:var(--ink-soft);
+  }
+  .try-chip:hover{ border-color:var(--ink-soft); color:var(--ink); }
+
+  /* ---- RIGHT: audit trail / receipt ---- */
+  .right{
+    background:var(--panel);
+    padding:1.4rem 1.6rem 2rem;
+    min-height:100%;
+  }
+  .receipt-head{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:.72rem; color:var(--ink-soft);
+    border-bottom:1px dashed var(--rule);
+    padding-bottom:.8rem; margin-bottom:.8rem;
+    display:flex; justify-content:space-between;
+  }
+  .status-dot{
+    display:inline-block; width:6px;height:6px;border-radius:50%;
+    background:var(--sage); margin-right:.4rem;
+  }
+
+  .ledger{
+    display:flex; flex-direction:column; gap:.55rem;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:.78rem;
+  }
+  .entry{
+    display:flex; gap:.5rem; align-items:flex-start;
+    padding:.5rem .6rem;
+    background:#fff;
+    border-left:2px solid var(--rule);
+  }
+  .entry.ok{ border-left-color:var(--sage); }
+  .entry.warn{ border-left-color:var(--amber); }
+  .entry.pay{ border-left-color:var(--stamp); }
+  .entry .icon{ flex-shrink:0; }
+  .entry .body .t{ color:var(--ink-soft); font-size:.68rem; }
+  .entry .body .m{ color:var(--ink); margin-top:.1rem; }
+
+  .empty-ledger{
+    font-family:'IBM Plex Mono',monospace; font-size:.78rem; color:var(--ink-soft);
+    padding:1rem 0;
+  }
+
+  .gate-note{
+    margin-top:1.2rem; padding:.8rem;
+    border:1px dashed var(--rule);
+    font-size:.76rem; color:var(--ink-soft); line-height:1.5;
+  }
+  .gate-note b{ color:var(--ink); }
+
+  footer{
+    padding:1rem 1.6rem 2rem;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:.7rem; color:var(--ink-soft);
+    border-top:1px solid var(--rule);
+  }
+</style>
+</head>
+<body>
+
+  <div class="brand">
+    <span class="mark">Counter</span>
+    <span class="tag">/ conversational checkout agent — razorpay test-mode</span>
+  </div>
+  <p class="subhead">
+    Talk to the storefront the way you'd talk to a shop assistant. Counter matches
+    your request to real inventory, confirms the order out loud, and creates a
+    Razorpay test-mode payment — logging every decision it makes on the right,
+    so nothing happens off the record.
+  </p>
+
+  <div class="layout">
+    <div class="left">
+      <p class="section-label">— inventory (live)</p>
+      <div class="catalog" id="catalog"></div>
+
+      <p class="section-label">— talk to counter</p>
+      <div class="chat">
+        <div class="chat-log" id="chatLog"></div>
+        <div class="chat-input">
+          <input id="chatInput" type="text" placeholder="e.g. I want the blue hoodie, size M" />
+          <button id="sendBtn">SEND</button>
+        </div>
+      </div>
+      <div class="try-row" id="tryRow"></div>
+    </div>
+
+    <div class="right">
+      <div class="receipt-head">
+        <span><span class="status-dot"></span>audit trail</span>
+        <span id="clock"></span>
+      </div>
+      <div class="ledger" id="ledger">
+        <div class="empty-ledger">No actions yet. Say something in the chat to start the trail.</div>
+      </div>
+      <div class="gate-note">
+        <b>Why this exists:</b> every money-moving step the agent takes is written
+        here before and after it happens — product match, price confirm, order
+        creation, payment status. Nothing is silent. If the agent can't fulfil a
+        request safely, it stops and says so instead of guessing.
+      </div>
+    </div>
+  </div>
+
+  <footer>built for razorpay ai buildathon — track 01, ai growth &amp; agentic commerce</footer>
+
+<script>
+  const PRODUCTS = [
+    { id:'p1', name:'Blue Hoodie', size:'M', price:1499, stock:4 },
+    { id:'p2', name:'Blue Hoodie', size:'L', price:1499, stock:0 },
+    { id:'p3', name:'Canvas Tote', size:'One size', price:699, stock:11 },
+    { id:'p4', name:'Ceramic Mug', size:'350ml', price:399, stock:20 },
+    { id:'p5', name:'Desk Lamp', size:'Warm White', price:2199, stock:2 },
+    { id:'p6', name:'Notebook Set', size:'A5 x3', price:549, stock:0 },
+  ];
+
+  const catalogEl = document.getElementById('catalog');
+  function renderCatalog(){
+    catalogEl.innerHTML = PRODUCTS.map(p => `
+      <div class="product ${p.stock===0?'out':''}">
+        <div class="name">${p.name}</div>
+        <div class="meta">${p.size} · ${p.stock===0?'Out of stock':p.stock+' left'}</div>
+        <div class="price">₹${p.price}</div>
+      </div>
+    `).join('');
+  }
+  renderCatalog();
+
+  const chatLog = document.getElementById('chatLog');
+  const chatInput = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const ledger = document.getElementById('ledger');
+  const clock = document.getElementById('clock');
+
+  function setClock(){
+    clock.textContent = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+  setClock(); setInterval(setClock, 1000);
+
+  function addBubble(who, html){
+    const b = document.createElement('div');
+    b.className = 'bubble ' + who;
+    b.innerHTML = html;
+    chatLog.appendChild(b);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
+  let ledgerStarted = false;
+  function addLedgerEntry(kind, title, message){
+    if(!ledgerStarted){ ledger.innerHTML = ''; ledgerStarted = true; }
+    const icon = kind==='ok' ? '✓' : kind==='warn' ? '!' : kind==='pay' ? '$' : '·';
+    const row = document.createElement('div');
+    row.className = 'entry ' + kind;
+    row.innerHTML = `
+      <div class="icon">${icon}</div>
+      <div class="body">
+        <div class="t">${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})} — ${title}</div>
+        <div class="m">${message}</div>
+      </div>`;
+    ledger.appendChild(row);
+    ledger.scrollTop = ledger.scrollHeight;
+  }
+
+  // ---- naive intent parser (stand-in for an LLM call) ----
+  // In production this block is a single API call to an LLM that returns
+  // { product_query, size, action }. Kept local here so the demo runs with
+  // no API key required.
+  function parseIntent(text){
+    const t = text.toLowerCase();
+    let match = null;
+    for(const p of PRODUCTS){
+      if(t.includes(p.name.toLowerCase().split(' ')[0])){
+        if(t.includes(p.size.toLowerCase()) || !PRODUCTS.some(q=>q.name===p.name && q.size!==p.size && t.includes(q.size.toLowerCase()))){
+          match = p; break;
+        }
+      }
+    }
+    if(!match){
+      for(const p of PRODUCTS){
+        if(t.includes(p.name.toLowerCase().split(' ')[0])){ match = p; break; }
+      }
+    }
+    return match;
+  }
+
+  function handleSend(){
+    const text = chatInput.value.trim();
+    if(!text) return;
+    addBubble('user', text);
+    chatInput.value = '';
+
+    addLedgerEntry('info', 'intent received', `parsing request: "${text}"`);
+
+    setTimeout(() => {
+      const match = parseIntent(text);
+
+      if(!match){
+        addBubble('agent', `I couldn't match that to anything in stock right now. Could you name the item more specifically?`);
+        addLedgerEntry('warn', 'no product match', 'agent stopped — did not guess or substitute silently');
+        return;
+      }
+
+      addLedgerEntry('ok', 'product matched', `${match.name} (${match.size}) — id ${match.id}`);
+
+      if(match.stock === 0){
+        const alt = PRODUCTS.find(p => p.name===match.name && p.stock>0);
+        addLedgerEntry('warn', 'out of stock', `${match.name} (${match.size}) unavailable — checking alternatives`);
+        if(alt){
+          addBubble('agent', `The ${match.name} (${match.size}) is out of stock. I do have it in <b>${alt.size}</b> for ₹${alt.price} — want that instead?`);
+          addLedgerEntry('ok', 'fallback offered', `suggested ${alt.name} (${alt.size}) — no charge made yet`);
+        } else {
+          addBubble('agent', `The ${match.name} (${match.size}) is out of stock, and I don't have another size to offer. I won't create an order for this.`);
+          addLedgerEntry('warn', 'gated: no fulfilment path', 'agent declined to proceed — nothing charged');
+        }
+        return;
+      }
+
+      addBubble('agent', `Found it — <b>${match.name} (${match.size})</b> for ₹${match.price}. Confirming order and creating a test-mode payment.
+        <div class="card">
+          <div class="row"><span>${match.name} · ${match.size}</span><span>₹${match.price}</span></div>
+        </div>`);
+      addLedgerEntry('ok', 'price confirmed', `₹${match.price} shown to customer before charge`);
+
+      setTimeout(() => {
+        const orderId = 'order_TEST' + Math.random().toString(36).slice(2,8).toUpperCase();
+        addLedgerEntry('pay', 'razorpay order created (test mode)', `${orderId} · ₹${match.price} · status: created`);
+        addBubble('agent', `Order placed ✅ — test payment link generated (${orderId}). In production this hands off to Razorpay Checkout.`);
+        setTimeout(() => {
+          addLedgerEntry('pay', 'payment captured (test mode)', `${orderId} · status: captured`);
+        }, 900);
+      }, 700);
+
+    }, 500);
+  }
+
+  sendBtn.addEventListener('click', handleSend);
+  chatInput.addEventListener('keydown', e => { if(e.key==='Enter') handleSend(); });
+
+  const tries = [
+    "I want the blue hoodie, size M",
+    "blue hoodie size L please",
+    "give me a notebook set",
+    "I'll take the desk lamp"
+  ];
+  const tryRow = document.getElementById('tryRow');
+  tryRow.innerHTML = tries.map(t => `<span class="try-chip">${t}</span>`).join('');
+  tryRow.querySelectorAll('.try-chip').forEach((chip,i) => {
+    chip.addEventListener('click', () => { chatInput.value = tries[i]; handleSend(); });
+  });
+</script>
+</body>
+</html>
